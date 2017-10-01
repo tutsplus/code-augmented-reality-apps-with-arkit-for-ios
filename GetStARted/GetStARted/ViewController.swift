@@ -14,6 +14,8 @@ class ViewController: UIViewController, ARSCNViewDelegate {
 
     @IBOutlet var sceneView: ARSCNView!
     
+    var planes = [UUID : SCNNode]()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -24,7 +26,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         sceneView.showsStatistics = true
         
         // Create a new scene
-        let scene = SCNScene(named: "art.scnassets/ship.scn")!
+        let scene = SCNScene()
         
         // Set the scene to the view
         sceneView.scene = scene
@@ -35,6 +37,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         
         // Create a session configuration
         let configuration = ARWorldTrackingConfiguration()
+        configuration.planeDetection = .horizontal
 
         // Run the view's session
         sceneView.session.run(configuration)
@@ -54,14 +57,40 @@ class ViewController: UIViewController, ARSCNViewDelegate {
 
     // MARK: - ARSCNViewDelegate
     
-/*
-    // Override to create and configure nodes for anchors added to the view's session.
-    func renderer(_ renderer: SCNSceneRenderer, nodeFor anchor: ARAnchor) -> SCNNode? {
-        let node = SCNNode()
-     
-        return node
+    func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
+        guard let anchor = anchor as? ARPlaneAnchor else {
+            return
+        }
+        
+        let planeGeometry = SCNPlane(width: CGFloat(anchor.extent.x), height: CGFloat(anchor.extent.z))
+        let planeNode = SCNNode(geometry: planeGeometry)
+        planeNode.position = SCNVector3Make(anchor.center.x, 0, anchor.center.z)
+        planeNode.transform = SCNMatrix4MakeRotation(-.pi / 2.0, 1, 0, 0)
+        
+        planes[anchor.identifier] = planeNode
+        
+        node.addChildNode(planeNode)
     }
-*/
+    
+    func renderer(_ renderer: SCNSceneRenderer, didUpdate node: SCNNode, for anchor: ARAnchor) {
+        guard let node = planes[anchor.identifier], let geometry = node.geometry as? SCNPlane, let anchor = anchor as? ARPlaneAnchor else {
+            return
+        }
+        
+        geometry.width = CGFloat(anchor.extent.x)
+        geometry.height = CGFloat(anchor.extent.z)
+        
+        node.position = SCNVector3Make(anchor.center.x, 0, anchor.center.z)
+    }
+    
+    func renderer(_ renderer: SCNSceneRenderer, didRemove node: SCNNode, for anchor: ARAnchor) {
+        guard let node = planes[anchor.identifier] else {
+            return
+        }
+        
+        planes[anchor.identifier] = nil
+        node.removeFromParentNode()
+    }
     
     func session(_ session: ARSession, didFailWithError error: Error) {
         // Present an error message to the user

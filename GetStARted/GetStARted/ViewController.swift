@@ -55,6 +55,22 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         // Release any cached data, images, etc that aren't in use.
     }
 
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first?.location(in: sceneView), let hitResult = sceneView.hitTest(touch, options: [:]).first else {
+            return
+        }
+        
+        var position = hitResult.worldCoordinates
+        position.y += 0.25
+        
+        let cube = SCNBox(width: 0.2, height: 0.2, length: 0.2, chamferRadius: 0.0)
+        let node = SCNNode(geometry: cube)
+        node.position = position
+        node.physicsBody = SCNPhysicsBody(type: .dynamic, shape: nil)
+        
+        sceneView.scene.rootNode.addChildNode(node)
+    }
+    
     // MARK: - ARSCNViewDelegate
     
     func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
@@ -62,7 +78,11 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             return
         }
         
+        let material = SCNMaterial()
+        material.diffuse.contents = UIColor(white: 1.0, alpha: 0.2)
+        
         let planeGeometry = SCNPlane(width: CGFloat(anchor.extent.x), height: CGFloat(anchor.extent.z))
+        planeGeometry.materials = [material]
         let planeNode = SCNNode(geometry: planeGeometry)
         planeNode.position = SCNVector3Make(anchor.center.x, 0, anchor.center.z)
         planeNode.transform = SCNMatrix4MakeRotation(-.pi / 2.0, 1, 0, 0)

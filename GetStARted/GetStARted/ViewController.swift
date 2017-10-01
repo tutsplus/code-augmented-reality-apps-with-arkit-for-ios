@@ -10,6 +10,11 @@ import UIKit
 import SceneKit
 import ARKit
 
+enum PhysicsType : Int {
+    case box = 0b01
+    case plane = 0b10
+}
+
 class ViewController: UIViewController, ARSCNViewDelegate {
 
     @IBOutlet var sceneView: ARSCNView!
@@ -27,6 +32,14 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         
         // Create a new scene
         let scene = SCNScene()
+        
+        let noise = SCNNode()
+        noise.physicsField = SCNPhysicsField.noiseField(smoothness: 0.0, animationSpeed: 1.0)
+        noise.physicsField?.halfExtent = SCNVector3(3, 3, 3)
+        noise.physicsField?.strength = 10.0
+        noise.position = SCNVector3Zero
+        
+        scene.rootNode.addChildNode(noise)
         
         // Set the scene to the view
         sceneView.scene = scene
@@ -56,17 +69,33 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first?.location(in: sceneView), let hitResult = sceneView.hitTest(touch, options: [:]).first else {
-            return
-        }
+//        guard let touch = touches.first?.location(in: sceneView), let hitResult = sceneView.hitTest(touch, options: [:]).first else {
+//            return
+//        }
         
-        var position = hitResult.worldCoordinates
-        position.y += 0.25
+        let camera = sceneView.session.currentFrame?.camera
+        let transform = (camera != nil ? camera!.transform : matrix_identity_float4x4)
+    
+//        var position = hitResult.worldCoordinates
+//        position.y += 0.25
         
         let cube = SCNBox(width: 0.2, height: 0.2, length: 0.2, chamferRadius: 0.0)
         let node = SCNNode(geometry: cube)
-        node.position = position
+//        node.position = position
+        node.simdTransform = transform
         node.physicsBody = SCNPhysicsBody(type: .dynamic, shape: nil)
+        node.physicsBody?.friction = 10.0
+        
+        let rotation = matrix_float3x3.init(
+            simd_float3.init(transform.columns.0.x, transform.columns.0.y, transform.columns.0.z),
+            simd_float3.init(transform.columns.1.x, transform.columns.1.y, transform.columns.1.z),
+            simd_float3.init(transform.columns.2.x, transform.columns.2.y, transform.columns.2.z)
+        )
+        
+        let directionVector = matrix_multiply(rotation, simd_float3(0,0,-5))
+        let direction = SCNVector3Make(directionVector.x, directionVector.y, directionVector.z)
+        
+        node.physicsBody?.applyForce(direction, asImpulse: true)
         
         sceneView.scene.rootNode.addChildNode(node)
     }
@@ -86,6 +115,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         let planeNode = SCNNode(geometry: planeGeometry)
         planeNode.position = SCNVector3Make(anchor.center.x, 0, anchor.center.z)
         planeNode.transform = SCNMatrix4MakeRotation(-.pi / 2.0, 1, 0, 0)
+        planeNode.physicsBody = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(geometry: planeGeometry, options: [:]))
         
         planes[anchor.identifier] = planeNode
         
@@ -99,6 +129,8 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         
         geometry.width = CGFloat(anchor.extent.x)
         geometry.height = CGFloat(anchor.extent.z)
+        
+        node.physicsBody = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(geometry: geometry, options: [:]))
         
         node.position = SCNVector3Make(anchor.center.x, 0, anchor.center.z)
     }

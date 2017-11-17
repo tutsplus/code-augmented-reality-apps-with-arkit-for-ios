@@ -33,10 +33,12 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         // Create a new scene
         let scene = SCNScene()
         
+        scene.lightingEnvironment.contents = UIImage(named: "environment")
+        
         let noise = SCNNode()
         noise.physicsField = SCNPhysicsField.noiseField(smoothness: 0.0, animationSpeed: 1.0)
         noise.physicsField?.halfExtent = SCNVector3(3, 3, 3)
-        noise.physicsField?.strength = 10.0
+        noise.physicsField?.strength = 0.0
         noise.position = SCNVector3Zero
         
         scene.rootNode.addChildNode(noise)
@@ -51,6 +53,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         // Create a session configuration
         let configuration = ARWorldTrackingConfiguration()
         configuration.planeDetection = .horizontal
+        configuration.isLightEstimationEnabled = true
 
         // Run the view's session
         sceneView.session.run(configuration)
@@ -79,7 +82,13 @@ class ViewController: UIViewController, ARSCNViewDelegate {
 //        var position = hitResult.worldCoordinates
 //        position.y += 0.25
         
+        let material = SCNMaterial()
+        material.lightingModel = .physicallyBased
+        material.diffuse.contents = UIColor.orange
+        material.locksAmbientWithDiffuse = true
+        
         let cube = SCNBox(width: 0.2, height: 0.2, length: 0.2, chamferRadius: 0.0)
+        cube.materials = [material]
         let node = SCNNode(geometry: cube)
 //        node.position = position
         node.simdTransform = transform
@@ -92,7 +101,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             simd_float3.init(transform.columns.2.x, transform.columns.2.y, transform.columns.2.z)
         )
         
-        let directionVector = matrix_multiply(rotation, simd_float3(0,0,-5))
+        let directionVector = matrix_multiply(rotation, simd_float3(0,0,-2))
         let direction = SCNVector3Make(directionVector.x, directionVector.y, directionVector.z)
         
         node.physicsBody?.applyForce(direction, asImpulse: true)
@@ -101,6 +110,14 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     }
     
     // MARK: - ARSCNViewDelegate
+    
+    func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
+        guard let estimate = sceneView.session.currentFrame?.lightEstimate else {
+            return
+        }
+        
+        sceneView.scene.lightingEnvironment.intensity = estimate.ambientIntensity / 1000.0
+    }
     
     func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
         guard let anchor = anchor as? ARPlaneAnchor else {

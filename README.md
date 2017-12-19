@@ -1,4 +1,4 @@
-# [Code Augmented Reality Apps With ARKit for iOS][published url]
+# [Get Started With Augmented Reality for iOS][published url]
 ## Instructor: [Markus Mühlberger][instructor url]
 
 Augmented reality is an up-and-coming technology for mobile apps, popularized by the hit game Pokemon Go. With the recent enhancements to Android and iOS it is now easier than ever to begin developing AR applications. 
@@ -11,9 +11,9 @@ The source files contain all the example projects that are used during the cours
 
 ------
 
-These are source files for the Envato Tuts+ course: [Code Augmented Reality Apps With ARKit for iOS][published url]
+These are source files for the Envato Tuts+ course: [Get Started With Augmented Reality for iOS][published url]
 
 Available on [Tuts+](https://tutsplus.com). Teaching skills to millions worldwide.
 
-[published url]: https://code.tutsplus.com/courses/code-augmented-reality-apps-with-arkit-for-ios
+[published url]: https://code.tutsplus.com/courses/get-started-with-augmented-reality-for-ios
 [instructor url]: https://tutsplus.com/authors/markus-muehlberger
